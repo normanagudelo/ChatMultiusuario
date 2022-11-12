@@ -1,0 +1,107 @@
+
+import java.net.*;
+import java.io.*;
+import java.util.Scanner;
+
+public class Cliente {
+    private Socket socket;
+    private DataInputStream datosentrada = null;
+    private DataOutputStream datossalida = null;
+    Scanner teclado = new Scanner(System.in);
+    
+
+    public void CONNECT(String ip, int puerto) {
+        try {
+            socket = new Socket(ip, puerto);
+           System.out.println("Conectado a :" + socket.getInetAddress().getHostName());
+        } catch (Exception e) {
+           System.out.println("Excepción al levantar conexión: " + e.getMessage());
+            System.exit(0);
+        }
+    }
+
+  
+
+    public void FLUX() {
+        try {
+            datosentrada = new DataInputStream(socket.getInputStream());
+            datossalida = new DataOutputStream(socket.getOutputStream());
+            datossalida.flush();
+        } catch (IOException e) {
+            System.out.println("Error en la apertura de flujos");
+        }
+    }
+
+
+
+    public void CLOSE() {
+        try {
+            datosentrada.close();
+            datossalida.close();
+            socket.close();
+            System.out.println("Conexión terminada");
+        } catch (IOException e) {
+           System.out.println("IOException on cerrarConexion()");
+        }finally{
+            System.exit(0);
+        }
+    }
+
+    public void RUNNER(String ip, int puerto) {
+        Thread hilo = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    CONNECT(ip, puerto);
+                    FLUX();
+                    DATAGET();
+                } finally {
+                    CLOSE();
+                }
+            }
+        });
+        hilo.start();
+    }
+
+    public void DATAGET() {
+        String st = "";
+        try {
+            do {
+                st = (String) datosentrada.readUTF();
+               System.out.println(st);
+                
+            } while (!st.equals("chao()"));
+        } catch (IOException e) {}
+    }
+
+    public void DATAWRITE(String alias) throws IOException {
+        String entrada = "";
+        while (true) {
+            System.out.print("["+alias+"] >>> ");
+            entrada = teclado.nextLine();
+            if(entrada.length() > 0)
+                 datossalida.writeUTF("["+alias+"] <<<< "+entrada);
+                
+              
+        }
+    }
+
+    public static void main(String[] argumentos) throws IOException {
+        Cliente cliente = new Cliente();
+        Scanner escaner = new Scanner(System.in);
+        System.out.println("Ingresa la IP:  ");
+        String ip = escaner.nextLine();
+        if (ip.length() <= 0) ip = "localhost";
+
+        System.out.println("Ingrese el Puerto: ");
+        String puerto = escaner.nextLine();
+        if (puerto.length() <= 0) puerto = "5050";
+        
+       System.out.println("Ingresa el nombre de usuario o alias: ");
+        String alias = escaner.nextLine();
+        
+        
+        cliente.RUNNER(ip, Integer.parseInt(puerto));
+        cliente.DATAWRITE(alias);
+    }
+}
